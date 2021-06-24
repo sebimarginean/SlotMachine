@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <title>Slot machine</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+    <link rel="stylesheet" href="style.css">
+  </head>
+  <body>
+    <div id="app">
+      <div class="head">
+        <span class="img-container">
+          <img src="images/sizzling.png" alt="slot">
+        </span>
+        <p class="result" v-if="ok == 1">Win!</p>
+        <p class="result" v-else-if="ok == 0">Lose!</p>
+      </div>
+
+      <div class="body">
+        <div class="slot">
+          <ul id="list">
+            <li v-for="(n, i) in 3" :title="result[i]" v-html="result[i]">{{ result[i] }}</li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer">
+        <div class="item1">
+          <button @click="functionality" type="button" name="button" id="start">Start</button>
+        </div>
+        <div class="item2">
+          <button type="button" name="button" @click="reset">Reset</button>
+        </div>
+        <div class="item3">
+          <label for="Text">Username: </label>
+          <input type="text" id="Text" v-model="username">
+          <br>
+          <input type="radio" id="Numbers" value="numbers" v-model="picked">
+          <label for="Numbers">Numbers</label>
+          <br>
+          <input type="radio" id="Images" value="images" v-model="picked">
+          <label for="Images">Images</label>
+          <br>
+          <input type="radio" id="Emojis" value="emojis" v-model="picked">
+          <label for="Emojis">Emojis</label>
+        </div>
+        <div class="item4">
+          <label for="number">Bet: </label>
+          <input type="number" id="number" name="number" :min="minim" :max="wallet" v-model="minim"><br><br>
+        </div>
+        <div class="item5">
+          <p :title="wallet" id="credit">Credit: {{ wallet }} coins</p>
+        </div>
+        <div class="item6">
+          <table>
+            <tr>
+              <th>No.</th>
+              <th>Timestamp</th>
+              <th>Username</th>
+              <th>High score</th>
+              <th>Moves</th>
+            </tr>
+            <tr v-for="n in users">
+              <td>{{ n }}</td>
+              <td>{{ dateTable[n] }}</td>
+              <td>{{ usernameTable[n] }}</td>
+              <td>{{ highscoreTable[n] }}</td>
+              <td>{{ clickedTable[n] }}</td>
+            </tr>
+          </table>
+
+        </div>
+      </div>
+    </div>
+      <script>
+
+        var app = new Vue({
+          el: '#app',
+          data() {
+            return {
+              wallet: 100,
+              minim: 50,
+              bet: 50,
+              picked: '',
+              default: ['-', '-', '-'],
+              result: ['-', '-', '-'],
+              numbers: ['0', '1', '2'],
+              images: ['<img src="images/stea.png" height="150px" width="170px">', '<img src="images/cireasa.png" height="150px" width="150px">', '<img src="images/septar.png" height="150px" width="150px">'],
+              emojis: ['&#127815', '&#127819', '&#127826'],
+              ok: -1,
+              username: '',
+              usernameTable: [],
+              clicked: '',
+              clickedTable: [],
+              users: '',
+              date: '',
+              dateTable: [],
+              highscore: '',
+              highscoreTable: []
+            }
+          },
+          methods: {
+            functionality: async function () {
+              const self = this
+              self.bet = self.minim
+
+              if (self.bet <= self.wallet && self.wallet != 0) {
+                self.clicked++
+                self.wallet -= self.bet
+                await generate(0)
+                await generate(1)
+                await generate(2)
+                await verify()
+              }
+
+              async function generate (param) {
+                return new Promise((resolve, reject) => {
+                  let int;
+                  if (self.picked === 'numbers')
+                    int = setInterval(() => Vue.set(self.result, param, self.numbers[Math.floor(Math.random()*3)]), 350)
+                  else if (self.picked === 'images')
+                    int = setInterval(() => Vue.set(self.result, param, self.images[Math.floor(Math.random()*3)]), 350)
+                  else
+                    int = setInterval(() => Vue.set(self.result, param, self.emojis[Math.floor(Math.random()*3)]), 350)
+                  setTimeout(() => { clearInterval(int); resolve() }, 350*4)
+                })
+              }
+
+              async function verify () {
+                return new Promise((resolve, reject) => {
+                  let first = self.result[0]
+                  let second = self.result[1]
+                  let third = self.result[2]
+                  self.ok = 1
+
+                  if (first === second && second === third)
+                    self.wallet += self.bet * 2
+
+                  else if (first === second || first === third || second === third)
+                    self.wallet += self.bet * 1.5
+
+                  else {
+                    self.ok = 0
+                    if (self.clicked == 1)
+                      self.highscore = 100
+                    if (self.wallet == 0) {
+                      self.users++
+                      let d = new Date()
+                      self.dateTable[self.users] = `${d.getDate()}.${d.getMonth()+1}.${d.getFullYear()}, ${d.getHours()}:${d.getMinutes()}:${d.getSeconds()}`
+                      self.usernameTable[self.users] = self.username
+                      self.highscoreTable[self.users] = self.highscore
+                      self.clickedTable[self.users] = self.clicked
+                    }
+                  }
+
+                  if (self.wallet >= self.highscore)
+                    self.highscore = self.wallet
+
+                  self.minim = self.wallet/2
+                })
+              }
+            },
+
+            reset: function () {
+              let self = this
+              self.wallet = 100
+              self.minim = 50
+              self.ok = -1
+              
+              for (let k = 0; k < 3; k++)
+                Vue.set(self.result, k, self.default[k])
+
+              self.highscore = ''
+              self.clicked = ''
+            }
+          }
+        })
+    </script>
+  </body>
+</html>
